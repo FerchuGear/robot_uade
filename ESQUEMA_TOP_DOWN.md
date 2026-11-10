@@ -6,73 +6,70 @@ Santino López
 
 ## Descripción
 
-El programa divide la ejecución de misiones en funciones independientes para validar comandos, comunicarse con el robot, procesar una secuencia y generar un reporte final.
+El programa utiliza un diseño Top-Down, dividiendo la ejecución de misiones para el robot Unitree Go2 en funciones con responsabilidades específicas.
+
+La función principal coordina la conexión con el simulador, la ejecución de las misiones y la generación de reportes.
 
 ## Descomposición del programa
 
 ```text
 main()
-|
-|-- Conectar el robot
-|
-|-- Por cada misión
-|   |-- Crear historial
-|   |-- ejecutar_mision(robot, mision, historial)
-|   |   |-- comando_es_valido(comando)
-|   |   |-- ejecutar_comando(robot, comando) si es válido
-|   |   `-- Registrar el resultado en historial
-|   |
-|   `-- generar_reporte(historial)
-|       |-- Contar ejecutados y omitidos
-|       |-- Calcular distancia y duración estimada
-|       `-- Imprimir el reporte
-|
-`-- Detener y desconectar el robot
+│
+├── Conectar el robot
+│
+├── Por cada misión
+│   │
+│   ├── Crear historial
+│   │
+│   ├── ejecutar_mision(robot, mision, historial)
+│   │   ├── comando_es_valido(comando)
+│   │   ├── ejecutar_comando(robot, comando) si es válido
+│   │   └── Registrar el resultado en historial
+│   │
+│   └── generar_reporte(historial)
+│       ├── Contar comandos ejecutados y omitidos
+│       ├── Calcular distancia y duración estimada
+│       └── Mostrar el reporte
+│
+└── Detener y desconectar el robot
 ```
 
-## Diagrama del funcionamiento
+## Funciones principales
 
-```mermaid
-flowchart TD
-    A[Conectar robot] --> B[Seleccionar misión]
-    B --> C[Leer comando]
-    C --> D{Comando válido?}
-    D -- Sí --> E[Ejecutar comando]
-    D -- No --> F[Registrar comando omitido]
-    E --> G[Registrar resultado]
-    F --> H{Quedan comandos?}
-    G --> H
-    H -- Sí --> C
-    H -- No --> I[Generar reporte]
-    I --> J{Quedan misiones?}
-    J -- Sí --> B
-    J -- No --> K[Detener y desconectar]
-```
+### comando_es_valido(comando)
 
-## Responsabilidades de las funciones
+Recibe un comando y comprueba que su tipo, cantidad de parámetros y valores sean correctos. Devuelve un valor booleano que indica si puede ejecutarse.
 
-| Función | Entrada | Salida o efecto | Responsabilidad |
-|---|---|---|---|
-| `comando_es_valido()` | Tupla del comando | Booleano | Comprobar formato, tipos y límites |
-| `ejecutar_comando()` | Robot y comando | Resultado de ejecución | Enviar una orden válida y manejar errores de seguridad |
-| `ejecutar_mision()` | Robot, lista de comandos e historial | Historial actualizado | Procesar los comandos y registrar los resultados |
-| `generar_reporte()` | Historial | Salida por consola | Calcular y mostrar estadísticas |
-| `main()` | Misiones y conexión | Coordinación general | Conectar, ejecutar misiones y desconectar |
+### ejecutar_comando(robot, comando)
+
+Recibe el robot y un comando válido. Ejecuta la acción correspondiente mediante el puente de comunicación con el simulador y devuelve el resultado de la operación.
+
+### ejecutar_mision(robot, mision, historial)
+
+Recibe una lista de comandos y los procesa mediante un ciclo `for`. Registra los comandos ejecutados y omitidos en la lista `historial`, utilizando `continue` para no interrumpir la misión cuando encuentra una orden inválida.
+
+### generar_reporte(historial)
+
+Recorre el historial y muestra la cantidad de comandos recibidos, ejecutados y omitidos, junto con la distancia recorrida y la duración estimada.
+
+### main()
+
+Coordina la conexión con el simulador, ejecuta las cuatro misiones, genera los reportes correspondientes y desconecta el robot al finalizar.
 
 ## Estructuras utilizadas
 
-### Listas y tuplas
+### Lista de tuplas
 
-Las misiones contienen tuplas de comandos. Esta representación permite agregar otra misión sin modificar las funciones principales.
+Las misiones se representan mediante listas de tuplas. Cada tupla contiene el tipo de comando y sus parámetros.
 
 ### Lista de diccionarios
 
-Cada resultado queda registrado en un diccionario del historial, incluyendo el comando, si fue ejecutado y los valores utilizados para calcular el reporte.
+El historial utiliza diccionarios para registrar los resultados de los comandos y almacenar la información necesaria para generar los reportes.
 
 ### Decisiones e iteraciones
 
-Se utilizan `if/elif`, `for` y `continue` para validar las órdenes, omitir las incorrectas y continuar con el resto de la misión.
+Se utilizan estructuras condicionales y ciclos para validar las órdenes, ejecutar los comandos correctos y continuar ante comandos inválidos.
 
 ## Ventaja del diseño
 
-Las funciones se reutilizan para ejecutar diferentes secuencias de comandos. Para la misión propia solo fue necesario definir otra lista.
+La división en funciones permite ejecutar diferentes misiones modificando únicamente la lista de comandos, sin necesidad de reescribir la lógica de validación, ejecución y generación de reportes.
